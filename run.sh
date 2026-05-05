@@ -1,30 +1,31 @@
-#!/usr/bin/env bash
 
-set -e
+mkdir -p .devcontainer
 
-REPO_NAME=$(basename "$PWD")
-echo "Running project: $REPO_NAME 🚀"
+cat <<EOL > .devcontainer/devcontainer.json
+{
+    "name": "My Codespace",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:3.8",
+    "features": {
+        "ghcr.io/devcontainers/features/sshd:1": {
+            "version": "latest"
+        }
+    },
+    "postStartCommand": "REPO_NAME=\$(basename \$(git rev-parse --show-toplevel)); python3 /workspaces/\$REPO_NAME/m.py",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.pythonPath": "/usr/local/bin/python"
+            },
+            "extensions": [
+                "ms-python.python"
+            ]
+        }
+    }
+}
+EOL
 
-# Stop cleanly on Ctrl+C
-trap "echo 'Stopped by user'; exit" SIGINT
+git add .devcontainer/devcontainer.json
 
-# Check Python
-if ! command -v python3 &> /dev/null
-then
-    echo "Python3 not found. Installing..."
-    sudo apt update && sudo apt install -y python3
-fi
+git commit -m "Add postStartCommand to run Python script automatically with repo name detection"
 
-# Auto-restart loop
-while true
-do
-    echo "Starting m.py..."
-    
-    python3 m.py
-
-    EXIT_CODE=$?
-    echo "Script exited with code $EXIT_CODE"
-
-    echo "Restarting in 1 second..."
-    sleep 1
-done
+git push origin main
